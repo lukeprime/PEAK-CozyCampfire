@@ -4,4 +4,6 @@ Cozy up by a campfire in PEAK that lasts forever and prevents hunger.  Perfect f
 
 This mod has no lag or slowness!
 
+Does not affect portable stove.
+
 Please submit bugs on github: [Issues](https://github.com/lukeprime/PEAK-CozyCampfire/issues)

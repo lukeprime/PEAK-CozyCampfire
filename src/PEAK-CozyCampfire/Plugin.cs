@@ -3,6 +3,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
+using static CharacterAfflictions;
 
 namespace PEAK_CozyCampfire;
 
@@ -45,49 +46,73 @@ public partial class Plugin : BaseUnityPlugin
     {
         private static void Postfix(Campfire __instance)
         {
-            __instance.burnsFor = float.PositiveInfinity;
-            __instance.beenBurningFor = 0f;
-
-            if (!campfireCache.Contains(__instance))
+            for (int i = campfireCache.Count - 1; i >= 0; i--)
             {
-                campfireCache.Add(__instance);
+                if (campfireCache[i] == null)
+                {
+                    campfireCache.RemoveAt(i);
+                }
+            }
+
+            if (!string.Equals(__instance.GetName(), "PORTABLE STOVE", System.StringComparison.InvariantCultureIgnoreCase))
+            {
+                __instance.burnsFor = float.PositiveInfinity;
+                __instance.beenBurningFor = 0f;
+
+                if (!campfireCache.Contains(__instance))
+                {
+                    campfireCache.Add(__instance);
+                }
             }
         }
     }
 
-    [HarmonyPatch(typeof(CharacterAfflictions), "UpdateNormalStatuses")]
-    private class Patch_UpdateNormalStatuses
+    [HarmonyPatch(typeof(CharacterAfflictions), "AddStatus")]
+    private class Patch_AddStatus
     {
         private static readonly Dictionary<CharacterAfflictions, Character> playerCache = [];
 
-        private static bool Prefix(CharacterAfflictions __instance)
+        private static bool Prefix(STATUSTYPE statusType, float amount, CharacterAfflictions __instance)
         {
-            if (!playerCache.TryGetValue(__instance, out var player))
+            if (statusType == STATUSTYPE.Hunger)
             {
-                player = __instance.GetComponent<Character>();
-                if (player != null)
+                if (!playerCache.TryGetValue(__instance, out var player))
                 {
-                    playerCache[__instance] = player;
+                    player = __instance.GetComponent<Character>();
+                    if (player != null)
+                    {
+                        playerCache[__instance] = player;
+                    }
+                }
+
+                if (player == null || !player.IsLocal || player.data.dead || player.isBot)
+                {
+                    return true;
+                }
+
+                Vector3 playerPosition = player.Center;
+                foreach (Campfire campfire in campfireCache)
+                {
+                    Vector3 positionDiff = campfire.transform.position - playerPosition;
+                    float playerDistanceSqr = positionDiff.sqrMagnitude;
+                    float radiusSqr = campfire.moraleBoostRadius * campfire.moraleBoostRadius;
+                    if (playerDistanceSqr <= radiusSqr)
+                    {
+                        return false;
+                    }
                 }
             }
 
-            if (player == null || !player.IsLocal || player.data.dead)
-            {
-                return true;
-            }
+            return true;
+        }
+    }
 
-            Vector3 playerPosition = player.Center;
-            foreach (Campfire campfire in campfireCache)
-            {
-                Vector3 positionDiff = campfire.transform.position - playerPosition;
-                float playerDistanceSqr = positionDiff.sqrMagnitude;
-                float radiusSqr = campfire.moraleBoostRadius * campfire.moraleBoostRadius;
-                if (playerDistanceSqr <= radiusSqr)
-                {
-                    return false;
-                }
-            }
-
+    [HarmonyPatch(typeof(EndScreen), "Start")]
+    private class Patch_EndScreen
+    {
+        private static bool Prefix(EndScreen __instance)
+        {
+            campfireCache.Clear();
             return true;
         }
     }
