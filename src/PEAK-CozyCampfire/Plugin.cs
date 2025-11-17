@@ -74,7 +74,8 @@ public partial class Plugin : BaseUnityPlugin
 
         private static bool Prefix(STATUSTYPE statusType, float amount, CharacterAfflictions __instance)
         {
-            if (statusType == STATUSTYPE.Hunger)
+            if (statusType == STATUSTYPE.Hunger
+                || statusType == STATUSTYPE.Cold)
             {
                 if (!playerCache.TryGetValue(__instance, out var player))
                 {
@@ -111,6 +112,16 @@ public partial class Plugin : BaseUnityPlugin
     private class Patch_EndScreen
     {
         private static bool Prefix(EndScreen __instance)
+        {
+            campfireCache.Clear();
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(SteamLobbyHandler), "LeaveLobby")]
+    private class Patch_LeaveLobby
+    {
+        private static bool Prefix(SteamLobbyHandler __instance)
         {
             campfireCache.Clear();
             return true;

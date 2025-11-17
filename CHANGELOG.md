@@ -1,3 +1,9 @@
+# 1.0.2
+11/17/2025
+- Updated to work with new game patch v1.40.a (The Roots update)
+- Additionally prevent cold affliction near campfire
+- Clear campfire cache when leaving a game
+
 # 1.0.1
 08/18/2025
 - BUG FIX: afflictions now recover like normal after first game
